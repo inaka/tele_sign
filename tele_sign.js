@@ -57,11 +57,21 @@ module.exports = function (customerId, secretKey) {
     return Math.round(Math.random() * Math.pow(10, n));
   }
 
+  // A phone number beginning by '+' is still a valid phone number, but
+  // Tele Sign API requires that phone numbers requires that phone numbers does
+  // not begin with '+'. This function removes it, if present.
+  function cleanPhoneNumber(phoneNumber) {
+    if (typeof phoneNumber === 'string' && phoneNumber[0] === '+') {
+      phoneNumber = phoneNumber.substring(1, phoneNumber.length );
+    }
+    return phoneNumber;
+  }
   this.sms = function (phoneNumber, verifyCode, language, template, callback) {
     var resource = '/v1/verify/sms',
       method = 'POST',
       headers,
       fields;
+    phoneNumber = cleanPhoneNumber(phoneNumber);
     if (!verifyCode) {
       verifyCode = randomWithNDigits(5);
     }
