@@ -99,6 +99,6 @@ module.exports = function (customerId, secretKey) {
       fields
     );
 
-    client.post(resource, null, {headers: headers}, callback, false).form(fields);
+    client.post(resource, null, {headers: headers}, callback, true).form(fields);
   };
 }
