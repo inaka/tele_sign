@@ -85,7 +85,8 @@ module.exports = function (customerId, secretKey) {
     fields = {
       phone_number: phoneNumber,
       language: language,
-      verify_code: verifyCode
+      verify_code: verifyCode,
+      template: template
     };
 
     headers = generateAuthHeaders(
