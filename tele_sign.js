@@ -22,7 +22,7 @@ module.exports = function (customerId, secretKey) {
     if (!authMethod) {
       authMethod = 'sha1';
     }
-    if (method === 'POST' || method === 'PUT') {
+    if (method === 'POST' || method === 'PUT' || method === 'GET') {
       contentType = 'application/x-www-form-urlencoded; charset=utf-8';
     }
 
@@ -100,5 +100,23 @@ module.exports = function (customerId, secretKey) {
     );
 
     client.post(resource, null, {headers: headers}, callback, true).form(fields);
+  };
+  this.verify = function (referenceId, callback) {
+    var resource = '/v1/verify/' + referenceId,
+      method = 'GET',
+      headers,
+      fields;
+    fields = {};
+
+    headers = generateAuthHeaders(
+      customerId,
+      secretKey,
+      resource,
+      method,
+      null,
+      null
+    );
+
+    client.get(resource, {headers: headers}, callback, true).form(fields);
   };
 }
