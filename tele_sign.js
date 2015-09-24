@@ -1,11 +1,11 @@
 /*jslint node: true, nomen: true */
 var request = require('request-json'),
   crypto = require('crypto'),
-  querystring = require('querystring');
+  querystring = require('query-string');
 
 module.exports = function (customerId, secretKey) {
   'use strict';
-  var client = request.newClient('https://rest.telesign.com/');
+  var client = request.createClient('https://rest.telesign.com/');
 
   function generateAuthHeaders(customerId, secretKey, resource, method, contentType, authMethod, fields) {
     var now = new Date(),
