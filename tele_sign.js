@@ -1,7 +1,7 @@
 /*jslint node: true, nomen: true */
 var request = require('request-json'),
   crypto = require('crypto'),
-  querystring = require('query-string');
+  querystring = require('query-string')
 
 module.exports = function (customerId, secretKey) {
   'use strict';
@@ -103,10 +103,9 @@ module.exports = function (customerId, secretKey) {
   };
   this.verify = function (referenceId, callback) {
     var resource = '/v1/verify/' + referenceId,
-      method = 'GET',
-      headers,
-      fields;
-    fields = {};
+        method = 'GET',
+        headers,
+        fields = {};
 
     headers = generateAuthHeaders(
       customerId,
@@ -118,5 +117,12 @@ module.exports = function (customerId, secretKey) {
     );
 
     client.get(resource, {headers: headers}, callback, true).form(fields);
+  };
+
+  this.phoneId = function(referenceId, callback){
+    var resource = '/v1/phoneId/' + referenceId,
+        method = 'GET',
+        headers,
+        fields = {};
   };
 }
