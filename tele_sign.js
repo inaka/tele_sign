@@ -5,7 +5,7 @@ var request = require('request-json'),
 
 module.exports = function (customerId, secretKey) {
   'use strict';
-  var client = request.createClient('https://rest.telesign.com/');
+  var client = request.createClient('https://rest.telesign.com/v1/');
 
   function generateAuthHeaders(customerId, secretKey, resource, method, contentType, authMethod, fields) {
     var now = new Date(),
@@ -46,7 +46,7 @@ module.exports = function (customerId, secretKey) {
     headers = {
       "Authorization": 'TSA ' + customerId + ':' + signature,
       "x-ts-date": currDate,
-      "x-ts-auth-method": AUTH_METHOD[authMethod].name,
+      //"x-ts-auth-method": AUTH_METHOD[authMethod].name,
       "x-ts-nonce": nonce,
       "Content-length": querystring.stringify(fields).length
     }
@@ -66,63 +66,98 @@ module.exports = function (customerId, secretKey) {
     }
     return phoneNumber;
   }
-  this.sms = function (phoneNumber, verifyCode, language, template, callback) {
-    var resource = '/v1/verify/sms',
-      method = 'POST',
-      headers,
-      fields;
-    phoneNumber = cleanPhoneNumber(phoneNumber);
-    if (!verifyCode) {
-      verifyCode = randomWithNDigits(5);
-    }
-    if (!language) {
-      language = 'en';
-    }
-
-    if (!template) {
-      template = '';
-    }
-    fields = {
-      phone_number: phoneNumber,
-      language: language,
-      verify_code: verifyCode,
-      template: template
-    };
-
-    headers = generateAuthHeaders(
-      customerId,
-      secretKey,
-      resource,
-      method,
-      null,
-      null,
-      fields
-    );
-
-    client.post(resource, null, {headers: headers}, callback, true).form(fields);
-  };
-  this.verify = function (referenceId, callback) {
-    var resource = '/v1/verify/' + referenceId,
-        method = 'GET',
+  return {
+    sms: function (phoneNumber, verifyCode, language, template, callback) {
+      var resource = 'verify/sms',
+        method = 'POST',
         headers,
-        fields = {};
+        fields;
+      phoneNumber = cleanPhoneNumber(phoneNumber);
+      if (!verifyCode) {
+        verifyCode = randomWithNDigits(5);
+      }
+      if (!language) {
+        language = 'en';
+      }
 
-    headers = generateAuthHeaders(
-      customerId,
-      secretKey,
-      resource,
-      method,
-      null,
-      null
-    );
+      if (!template) {
+        template = '';
+      }
+      fields = {
+        phone_number: phoneNumber,
+        language: language,
+        verify_code: verifyCode,
+        template: template
+      };
 
-    client.get(resource, {headers: headers}, callback, true).form(fields);
-  };
+      headers = generateAuthHeaders(
+        customerId,
+        secretKey,
+        resource,
+        method,
+        null,
+        null,
+        fields
+      );
 
-  this.phoneId = function(referenceId, callback){
-    var resource = '/v1/phoneId/' + referenceId,
-        method = 'GET',
-        headers,
-        fields = {};
+      client.post(resource, null, {headers: headers}, callback, true).form(fields);
+    },
+
+    verify: function (referenceId, callback) {
+      var resource = 'verify/' + referenceId,
+          method = 'GET',
+          headers,
+          fields = {};
+
+      headers = generateAuthHeaders(
+        customerId,
+        secretKey,
+        resource,
+        method,
+        null,
+        null
+      );
+
+      client.get(resource, {headers: headers}, callback, true).form(fields);
+    },
+
+    phoneId: {
+      score: function(phoneNum, useCase, callback){
+        var resource = 'phoneId/score/' + phoneNum,
+            method = 'GET',
+            headers,
+            fields = {
+              ucid: useCase
+            },
+            headers = generateAuthHeaders(
+              customerId,
+              secretKey,
+              resource,
+              method,
+              null,
+              null,
+              fields
+            );
+        client.get(resource, {headers: headers}, callback, true).form(fields);
+      },
+      standard: function(phoneNum, useCase, callback){
+        var resource = 'phoneId/standard/' + phoneNum,
+            method = 'GET',
+            headers,
+            fields = {
+              ucid: useCase
+            },
+            headers = generateAuthHeaders(
+              customerId,
+              secretKey,
+              resource,
+              method,
+              null,
+              null,
+              fields
+            );
+        client.get(resource, {headers: headers}, callback, true).form(fields);
+      }
+    }
   };
 }
