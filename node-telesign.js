@@ -5,7 +5,7 @@ var querystring = require('query-string');
 var NEWLINE     = require('os').EOL;
 var q           = require('q')
 
-module.exports = telesign;
+module.exports = teleSign;
 
 function teleSign(customerId, secret, authMethod, apiUrl, timeout, headers, options){
   var AUTH_METHODS = {
