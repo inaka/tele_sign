@@ -7,7 +7,7 @@ var q           = require('q')
 
 module.exports = teleSign;
 
-function teleSign(customerId, secret, authMethod, apiUrl, timeout, headers, options){
+function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   var AUTH_METHODS = {
     sha1: {hash: 'sha1', name: 'HMAC-SHA1'},
     sha256: {hash: 'sha256', name: 'HMAC-SHA256'}
