@@ -21,7 +21,6 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   return {
     phoneId:{
       score: function(phoneNum, useCaseCode, cb){
-        util.inherits(this, main);
         var self = this;
         var deferred = q.defer();
         if(!useCaseCode) useCaseCode = 'UNKN';
