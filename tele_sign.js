@@ -1,5 +1,5 @@
 /*jslint node: true, nomen: true */
-var request = require('request-json'),
+var request = require('request'),
   crypto = require('crypto'),
   querystring = require('query-string')
 
@@ -7,7 +7,7 @@ module.exports = function (customerId, secretKey) {
   'use strict';
   var client = request.createClient('https://rest.telesign.com/v1/');
 
-  function generateAuthHeaders(customerId, secretKey, resource, method, contentType, authMethod, fields) {
+  function generateAuthHeaders(customerId, secretKey, resource, method, contentType, authMethod, fields, cb) {
     var now = new Date(),
       currDate = now.toUTCString(),
       nonce = Math.random().toString(),
@@ -22,35 +22,40 @@ module.exports = function (customerId, secretKey) {
     if (!authMethod) {
       authMethod = 'sha1';
     }
-    if (method === 'POST' || method === 'PUT' || method === 'GET') {
+
+    if (method === 'POST' || method === 'PUT') {
       contentType = 'application/x-www-form-urlencoded; charset=utf-8';
+    } else{
+      contentType = '';
     }
 
-    stringToSign = method + '\n' + contentType +
-      '\n\nx-ts-auth-method:' + AUTH_METHOD[authMethod].name +
-      '\nx-ts-date:' + currDate +
-      '\nx-ts-nonce:' + nonce;
+    stringToSign = method + '\n' +
+      contentType + '\n' +
+      '\n' +
+      'x-ts-auth-method:' + AUTH_METHOD[authMethod].name + '\n' +
+      'x-ts-date:' + currDate + '\n' +
+      'x-ts-nonce:' + nonce;
 
-    if (fields) {
+    if (fields && (method === 'POST' || method === 'PUT')) {
       stringToSign += '\n' + querystring.stringify(fields);
     }
 
-    stringToSign +=  '\n' + resource;
-    signature = new Buffer(
-      crypto.createHmac(
-        AUTH_METHOD[authMethod].hash,
-        new Buffer(secretKey, 'base64')
-      ).update(stringToSign).digest()
-    ).toString('base64');
-
-    headers = {
-      "Authorization": 'TSA ' + customerId + ':' + signature,
-      "x-ts-date": currDate,
-      //"x-ts-auth-method": AUTH_METHOD[authMethod].name,
-      "x-ts-nonce": nonce,
-      "Content-length": querystring.stringify(fields).length
-    }
-    return headers;
+    stringToSign +=  '\n/v1/' + resource;
+    signature = crypto.createHmac(AUTH_METHOD[authMethod].hash, new Buffer(secretKey, 'base64').toString('utf-8'));
+    signature.write(stringToSign);
+    signature.end(function () {
+      var hash = signature.read();
+      headers = {
+        "Authorization": 'TSA ' + customerId + ':' + hash.toString('base64'),
+        "x-ts-date": currDate.slice(0,-3),
+        "x-ts-auth-method": AUTH_METHOD[authMethod].name,
+        "x-ts-nonce": nonce
+      }
+      if(method === 'POST' || method ==='PUT'){
+        headers['Content-length'] = querystring.stringify(fields).length;
+      }
+      return cb(null, headers);
+    });
   }
 
   function randomWithNDigits(n) {
@@ -117,13 +122,15 @@ module.exports = function (customerId, secretKey) {
         null,
         null
       );
-
-      client.get(resource, {headers: headers}, callback, true).form(fields);
+      for(var prop in headers){
+        client.headers[prop] = headers[prop];
+      }
+      client.get(resource, callback, true).form(fields);
     },
 
     phoneId: {
       score: function(phoneNum, useCase, callback){
-        var resource = 'phoneId/score/' + phoneNum,
+        var resource = 'phoneid/score/' + phoneNum,
             method = 'GET',
             headers,
             fields = {
@@ -136,12 +143,18 @@ module.exports = function (customerId, secretKey) {
               method,
               null,
               null,
-              fields
+              fields,
+              function(err, result){
+                for(var prop in result){
+                  client.headers[prop] = result[prop];
+                }
+                client.get(resource, callback).form(fields);
+              }
             );
-        client.get(resource, {headers: headers}, callback, true).form(fields);
+
       },
       standard: function(phoneNum, useCase, callback){
-        var resource = 'phoneId/standard/' + phoneNum,
+        var resource = 'phoneid/standard/' + phoneNum,
             method = 'GET',
             headers,
             fields = {
@@ -154,9 +167,14 @@ module.exports = function (customerId, secretKey) {
               method,
               null,
               null,
-              fields
-            );
-        client.get(resource, {headers: headers}, callback, true).form(fields);
+              fields,
+              function(err, result){
+                for(var prop in result){
+                  client.headers[prop] = result[prop];
+                }
+                client.get(resource, callback).form(fields);
+              }
+          );
       }
     }
   };
