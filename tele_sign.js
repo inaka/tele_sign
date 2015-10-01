@@ -1,5 +1,5 @@
 /*jslint node: true, nomen: true */
-var request = require('request'),
+var request = require('request-json'),
   crypto = require('crypto'),
   querystring = require('query-string')
 
