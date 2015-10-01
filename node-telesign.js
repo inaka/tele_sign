@@ -21,12 +21,14 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   return {
     phoneId:{
       score: function(phoneNum, useCaseCode, cb){
+        console.log(this)
+        console.log(teleSign)
         var self = this;
         var deferred = q.defer();
         if(!useCaseCode) useCaseCode = 'UNKN';
         this.method = 'GET';
         this.resource = 'v1/phoneid/score/'+phoneNum;
-        this.createHeaders().then(function(headers){
+        teleSign.createHeaders.bind(this).then(function(headers){
           var scoreReq = this.baseRequest.get({
             url: this.resource,
             headers: headers,
