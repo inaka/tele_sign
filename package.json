@@ -4,7 +4,7 @@
   "description": "Node.js library to send messages through http://www.telesign.com/",
   "main": "./node-telesign.js",
   "dependencies": {
-    "request": ">=2.64.1",
+    "request": ">=2.64",
     "query-string": "*",
     "q": "*"
   },
