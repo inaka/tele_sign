@@ -5,101 +5,110 @@ var querystring = require('query-string');
 var NEWLINE     = require('os').EOL;
 var q           = require('q')
 
-module.exports = teleSign;
-
 function teleSign(customerId, secret, authMethod, apiUrl, timeout){
-  var AUTH_METHODS = {
-    sha1: {hash: 'sha1', name: 'HMAC-SHA1'},
-    sha256: {hash: 'sha256', name: 'HMAC-SHA256'}
-  };
-  this.authMethod = (!authMethod) ? 'sha1' : authMethod;
-  this.timeout = (!timeout) ? 5 : timeout;
-  this.baseUrl = (!apiUrl) ? 'https://rest.telesign.com/' : apiUrl;
-  this.baseRequest = request.defaults({
-    baseUrl: this.baseUrl
-  });
+  var parent       = this;
+  this.authMethod  = (authMethod) ? authMethod : 'sha1';
+  this.timeout     = (timeout) ? timeout : 5;
+  this.baseUrl     = (apiUrl) ? apiUrl : 'https://rest.telesign.com/';
+  this.baseRequest = request.defaults({baseUrl: this.baseUrl});
+  this.secretKey   = secret;
+  this.customer    = customerId;
   return {
     phoneId:{
-      score: function(phoneNum, useCaseCode, cb){
-        console.log(this)
-        console.log(teleSign)
-        var self = this;
-        var deferred = q.defer();
+      score: function(phoneNum, useCaseCode, callback){
+        var self       = this;
+        var deferred   = q.defer();
+        var resource   = 'v1/phoneid/score/'+phoneNum;
+        var method     = 'GET';
         if(!useCaseCode) useCaseCode = 'UNKN';
-        this.method = 'GET';
-        this.resource = 'v1/phoneid/score/'+phoneNum;
-        teleSign.createHeaders.bind(this).then(function(headers){
-          var scoreReq = this.baseRequest.get({
-            url: this.resource,
+
+        parent.createHeaders(resource, method).then(function(headers){
+          request.get({
+            baseUrl: parent.baseUrl,
+            url: resource,
             headers: headers,
             qs: {ucid: useCaseCode}
-          }, function(err, resp){
+          },
+          function(err, resp){
             if(err) return deferred.reject(err);
             return deferred.resolve(resp.body);
           });
-        })
-        return deferred.promise.nodeify(callback)
+        });
+        return deferred.promise;
       }
     }
   }
 }
 
+teleSign.prototype.AUTH_METHODS = {
+  sha1: {hash: 'sha1', name: 'HMAC-SHA1'},
+  sha256: {hash: 'sha256', name: 'HMAC-SHA256'}
+};
 
 teleSign.prototype.getCurrTime = function(){
   this.currTime = new Date().toUTCString().slice(0,-3)+'+0000';
   return this.currTime;
-}
+};
 
 teleSign.prototype.createNonce = function(){
   var deferred = q.defer();
+  var self = this;
   crypto.randomBytes(48, function(err, buf) {
     if(err) return deferred.reject(err);
-    this.nonce = buf.toString('hex');
-    return deferred.resolve(buf.toString('hex'));
+    self.nonce = buf.toString('hex');
+    return deferred.resolve(self.nonce);
   });
-}
+  return deferred.promise;
+};
 
-teleSign.prototype.createAuthHeader = function(){
-  var deferred = q.defer();
+teleSign.prototype.createAuthHeader = function(resource, method){
+  var deferred     = q.defer();
+  var self         = this;
+  var parent       = teleSign.prototype;
   var stringToSign = '';
-  if(this.method === 'POST' || this.method === 'PUT') {
+  var contentType  = '';
+
+  if(method === 'POST' || this.method === 'PUT') {
     contentType = 'application/x-www-form-urlencoded; charset=utf-8';
   } else{
     contentType = 'text/plain';
   }
+
   this.createNonce().then(function(nonceData){
-    stringToSign += method + NEWLINE +
+    var stringToSign = method + NEWLINE +
       contentType + NEWLINE +
       NEWLINE +
-      'x-ts-auth-method:' + AUTH_METHODS[this.authMethod].name + NEWLINE +
-      'x-ts-date:' + this.getcurrTime() + NEWLINE +
+      'x-ts-auth-method:' + parent.AUTH_METHODS[self.authMethod].name + NEWLINE +
+      'x-ts-date:' + parent.getCurrTime() + NEWLINE +
       'x-ts-nonce:' + nonceData;
-
-    if (this.fields && (this.method === 'POST' || this.method === 'PUT')){
-      stringToSign += NEWLINE + querystring.stringify(this.fields);
+    if (self.fields && (method === 'POST' || method === 'PUT')){
+      stringToSign += NEWLINE + querystring.stringify(self.fields);
     }
-    stringToSign +=  NEWLINE + '/v1/' + this.resource;
-    signature = crypto.createHmac(AUTH_METHOD[this.authMethod].hash, new Buffer(secretKey, 'base64').toString('utf-8'));
-    signature.write(stringToSign);
-    signature.end(function(){
-      var hash = signature.read();
-      return deferred.resolve('TSA ' + customerId + ':' + hash.toString('base64'));
-    });
-  });
-}
+    stringToSign +=  NEWLINE + '/v1/' + resource;
+    var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, new Buffer(self.secretKey, 'base64').toString('utf-8'));
+    signature = signature.update(stringToSign).digest('base64');
+    return deferred.resolve('TSA ' + self.customer + ':' + signature);
 
-teleSign.prototype.createHeaders = function(){
+  });
+  return deferred.promise;
+};
+
+teleSign.prototype.createHeaders = function(resource, method){
   var deferred = q.defer();
-  var auth = this.createAuthHeader().then(function(signedData){
+  var self = this;
+  this.createAuthHeader(resource, method).then(function(signedData){
     var headers = {
       "Authorization": signedData,
-      "x-ts-date": this.currTime,
-      "x-ts-auth-method": AUTH_METHOD[this.authMethod].name,
-      "x-ts-nonce": this.nonce
+      "x-ts-date": self.currTime,
+      "x-ts-auth-method": teleSign.prototype.AUTH_METHODS[self.authMethod].name,
+      "x-ts-nonce": self.nonce
     }
-    if(this.method === 'POST' || this.method ==='PUT'){
+    if(method === 'POST' || method ==='PUT'){
       headers['Content-length'] = querystring.stringify(this.fields).length;
     }
     return deferred.resolve(headers);
-  })
-}
+  });
+  return deferred.promise;
+};
+
+module.exports = teleSign;
