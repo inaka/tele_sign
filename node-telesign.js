@@ -3,7 +3,8 @@ var util        = require('util');
 var crypto      = require('crypto');
 var querystring = require('query-string');
 var NEWLINE     = require('os').EOL;
-var q           = require('q')
+var q           = require('q');
+var base64      = require('base-64');
 
 function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   var parent       = this;
@@ -85,7 +86,7 @@ teleSign.prototype.createAuthHeader = function(resource, method){
       stringToSign += NEWLINE + querystring.stringify(self.fields);
     }
     stringToSign +=  NEWLINE + '/v1/' + resource;
-    var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, new Buffer(self.secretKey, 'base64').toString('utf-8'));
+    var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, base64.decode(self.secretKey));
     signature = signature.update(stringToSign).digest('base64');
     return deferred.resolve('TSA ' + self.customer + ':' + signature);
 

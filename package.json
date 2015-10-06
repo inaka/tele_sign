@@ -6,7 +6,8 @@
   "dependencies": {
     "request": ">=2.64",
     "query-string": "*",
-    "q": "*"
+    "q": "*",
+    "base-64": "*"
   },
   "engines": {
     "node": ">= 0.10.0"
