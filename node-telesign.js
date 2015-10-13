@@ -8,7 +8,7 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   var parent       = this;
   this.authMethod  = (authMethod) ? authMethod : 'sha1';
   this.timeout     = (timeout) ? timeout : 5;
-  this.baseUrl     = (apiUrl) ? apiUrl : 'https://rest.telesign.com/';
+  this.baseUrl     = (apiUrl) ? apiUrl : 'https://rest.telesign.com';
   this.baseRequest = request.defaults({baseUrl: this.baseUrl});
   this.secretKey   = secret;
   this.customer    = customerId;
@@ -17,7 +17,7 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
       score: function(phoneNum, useCaseCode){
         var self       = this;
         var deferred   = q.defer();
-        var resource   = 'phoneid/score/'+phoneNum;
+        var resource   = '/v1/phoneid/score/'+phoneNum;
         var method     = 'GET';
         if(!useCaseCode) useCaseCode = 'UNKN';
 
@@ -83,7 +83,7 @@ teleSign.prototype.createAuthHeader = function(resource, method){
     if (self.fields && (method === 'POST' || method === 'PUT')){
       stringToSign += NEWLINE + querystring.stringify(self.fields);
     }
-    stringToSign +=  NEWLINE + '/v1/' + resource;
+    stringToSign +=  NEWLINE + resource;
     var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, new Buffer(self.secretKey, 'base64').toString('utf-8'));
     signature = signature.update(stringToSign).digest('base64');
     return deferred.resolve('TSA ' + self.customer + ':' + signature);
