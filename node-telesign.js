@@ -14,10 +14,10 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   this.customer    = customerId;
   return {
     phoneId:{
-      score: function(phoneNum, useCaseCode, callback){
+      score: function(phoneNum, useCaseCode){
         var self       = this;
         var deferred   = q.defer();
-        var resource   = 'v1/phoneid/score/'+phoneNum;
+        var resource   = 'phoneid/score/'+phoneNum;
         var method     = 'GET';
         if(!useCaseCode) useCaseCode = 'UNKN';
 
@@ -78,7 +78,7 @@ teleSign.prototype.createAuthHeader = function(resource, method){
       contentType + NEWLINE +
       NEWLINE +
       'x-ts-auth-method:' + parent.AUTH_METHODS[self.authMethod].name + NEWLINE +
-      'x-ts-date:' + parent.getCurrTime() + NEWLINE +
+      'x-ts-date:' + self.getCurrTime() + NEWLINE +
       'x-ts-nonce:' + nonceData;
     if (self.fields && (method === 'POST' || method === 'PUT')){
       stringToSign += NEWLINE + querystring.stringify(self.fields);
