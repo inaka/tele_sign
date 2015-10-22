@@ -65,12 +65,11 @@ teleSign.prototype.createAuthHeader = function(resource, method){
   var self         = this;
   var parent       = teleSign.prototype;
   var stringToSign = '';
-  var contentType  = '';
 
   if(method === 'POST' || this.method === 'PUT') {
-    contentType = 'application/x-www-form-urlencoded; charset=utf-8';
+    this.contentType = 'application/x-www-form-urlencoded; charset=utf-8';
   } else{
-    contentType = '';
+    this.contentType = '';
   }
 
   this.createNonce().then(function(nonceData){
@@ -84,7 +83,7 @@ teleSign.prototype.createAuthHeader = function(resource, method){
       stringToSign += NEWLINE + querystring.stringify(self.fields);
     }
     stringToSign +=  NEWLINE + resource;
-    var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, new Buffer(self.secretKey, 'base64').toString('utf-8'));
+    var signature = crypto.createHmac(teleSign.prototype.AUTH_METHODS[self.authMethod].hash, new Buffer(self.secretKey, 'base64'));
     signature = signature.update(stringToSign).digest('base64');
     return deferred.resolve('TSA ' + self.customer + ':' + signature);
 
@@ -100,7 +99,8 @@ teleSign.prototype.createHeaders = function(resource, method){
       "Authorization": signedData,
       "x-ts-date": self.currTime,
       "x-ts-auth-method": teleSign.prototype.AUTH_METHODS[self.authMethod].name,
-      "x-ts-nonce": self.nonce
+      "Content-Type": self.contentType,
+      "x-ts-nonce": self.nonce,
     }
     if(method === 'POST' || method ==='PUT'){
       headers['Content-length'] = querystring.stringify(this.fields).length;
