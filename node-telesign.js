@@ -1,8 +1,9 @@
-var request     = require('request');
-var crypto      = require('crypto');
-var querystring = require('query-string');
-var NEWLINE     = require('os').EOL;
-var q           = require('q');
+var request      = require('request');
+var crypto       = require('crypto');
+var querystring  = require('query-string');
+var NEWLINE      = require('os').EOL;
+var q            = require('q');
+var contentyType = '';
 
 function teleSign(customerId, secret, authMethod, apiUrl, timeout){
   var parent       = this;
@@ -20,7 +21,6 @@ function teleSign(customerId, secret, authMethod, apiUrl, timeout){
         var resource   = '/v1/phoneid/score/'+phoneNum;
         var method     = 'GET';
         if(!useCaseCode) useCaseCode = 'UNKN';
-
         parent.createHeaders(resource, method).then(function(headers){
           request.get({
             baseUrl: parent.baseUrl,
@@ -66,10 +66,10 @@ teleSign.prototype.createAuthHeader = function(resource, method){
   var parent       = teleSign.prototype;
   var stringToSign = '';
 
-  if(method === 'POST' || this.method === 'PUT') {
-    this.contentType = 'application/x-www-form-urlencoded; charset=utf-8';
+  if(method === 'POST' || method === 'PUT') {
+    contentType = 'application/x-www-form-urlencoded; charset=utf-8';
   } else{
-    this.contentType = '';
+    contentType = '';
   }
 
   this.createNonce().then(function(nonceData){
@@ -99,7 +99,7 @@ teleSign.prototype.createHeaders = function(resource, method){
       "Authorization": signedData,
       "x-ts-date": self.currTime,
       "x-ts-auth-method": teleSign.prototype.AUTH_METHODS[self.authMethod].name,
-      "Content-Type": self.contentType,
+      "Content-Type": contentType,
       "x-ts-nonce": self.nonce,
     }
     if(method === 'POST' || method ==='PUT'){
